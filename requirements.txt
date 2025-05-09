@@ -1,3 +1,5 @@
 streamlit
 cerebras-cloud-sdk
-debugpy
+xmltodict
+requests
+pandas
