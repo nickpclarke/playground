@@ -1,0 +1,3 @@
+streamlit
+cerebras-cloud-sdk
+debugpy
