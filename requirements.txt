@@ -1,5 +1,11 @@
-streamlit
 cerebras-cloud-sdk
+streamlit
 xmltodict
 requests
 pandas
+faiss-cpu
+openai
+scikit-learn
+matplotlib
+plotly
+nltk
