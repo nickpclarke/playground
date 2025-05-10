@@ -1,8 +1,9 @@
 import os
 import openai
+from openai import OpenAI
 
-# Load your OpenAI key from environment
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# Create client once at module level
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 def get_openai_chat_completion(user_message: str, 
                                model: str = "gpt-3.5-turbo") -> dict:
@@ -10,7 +11,7 @@ def get_openai_chat_completion(user_message: str,
     Send a chat‐style completion request to OpenAI.
     Returns the full response dict.
     """
-    resp = openai.ChatCompletion.create(
+    resp = client.chat.completions.create(
         model=model,
         messages=[{"role": "user", "content": user_message}]
     )
@@ -23,22 +24,36 @@ def get_openai_text_completion(prompt: str,
     Send a text‐completion (single prompt) request to OpenAI.
     Returns the full response dict.
     """
-    resp = openai.Completion.create(
+    resp = client.completions.create(
         model=model,
         prompt=prompt,
         max_tokens=max_tokens
     )
     return resp
 
-def get_openai_embeddings(texts: list[str], 
-                          model: str = "text-embedding-ada-002") -> list[list[float]]:
+def get_openai_embeddings(text):
     """
-    Batch‐embed a list of strings using OpenAI’s embeddings endpoint.
-    Uses the new openai-python interface (>=1.0.0).
+    Get embeddings for a text using the OpenAI API.
+    
+    Args:
+        text (str): The text to embed
+        
+    Returns:
+        list: The embedding vector or None if there was an error
     """
-    resp = openai.embeddings.create(
-        model=model,
-        input=texts
-    )
-    # resp.data is a list of CreateEmbeddingResponseItem objects
-    return [item.embedding for item in resp.data]
+    try:
+        # Get embeddings using the updated client API
+        response = client.embeddings.create(
+            model="text-embedding-ada-002",
+            input=text
+        )
+        
+        # Extract the embedding vector (note the new structure)
+        embedding = response.data[0].embedding
+        return embedding
+    
+    except Exception as e:
+        print(f"Error getting embeddings: {str(e)}")
+        # Log the text that caused the issue (first 100 chars)
+        print(f"Problem text: {text[:100]}... (length: {len(text)})")
+        return None
