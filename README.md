@@ -5,14 +5,24 @@ This project is a versatile web application built using Streamlit. It includes t
 ## Project Structure
 
 ```
-streamlit-chat-app
-├── app.py                # Main entry point for the Streamlit web application
-├── cerebras_client.py    # Contains the Cerebras client initialization and chat functions
-├── openai_client.py      # Contains functions for generating OpenAI embeddings
-├── requirements.txt      # Lists the project dependencies
-├── README.md             # Documentation for the project
+streamlit-chat-app/
+├── app.py                  # Main entry point for the Streamlit web application
+├── cerebras_client.py      # Contains the Cerebras client initialization and chat functions
+├── openai_client.py        # Contains functions for generating OpenAI embeddings
+├── requirements.txt        # Lists the project dependencies
+├── README.md               # Documentation for the project
+├── components/             # Modular UI components
+│   ├── __init__.py         # Makes the directory a Python package
+│   ├── rss_tab.py          # RSS tab functionality
+│   ├── cerebras_tab.py     # Cerebras LLM tab functionality
+│   └── future_tab.py       # Future projects tab functionality
+├── utils/                  # Utility functions
+│   ├── __init__.py         # Makes the directory a Python package
+│   ├── rss_utils.py        # RSS feed fetching and processing utilities
+│   ├── text_utils.py       # Text processing and chunking utilities
+│   └── embedding_utils.py  # Embedding generation and visualization utilities
 └── .streamlit
-    └── config.toml       # Configuration settings for the Streamlit application
+    └── config.toml         # Configuration settings for the Streamlit application
 ```
 
 ## Features
