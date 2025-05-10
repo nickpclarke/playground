@@ -1,13 +1,16 @@
 import os
 from cerebras.cloud.sdk import Cerebras
 
+# Default model to use across all functions
+DEFAULT_MODEL = "llama3.1-8b"
+
 class CerebrasClient:
-    def __init__(self):
+    def __init__(self, api_key=None):
         self.client = Cerebras(
-            api_key=os.environ.get("CEREBRAS_API_KEY"),
+            api_key=api_key or os.environ.get("CEREBRAS_API_KEY"),
         )
 
-    def get_chat_completion(self, user_message):
+    def get_chat_completion(self, user_message, model=DEFAULT_MODEL):
         chat_completion = self.client.chat.completions.create(
             messages=[
                 {
@@ -15,27 +18,25 @@ class CerebrasClient:
                     "content": user_message,
                 }
             ],
-            model="llama-4-scout-17b-16e-instruct",
+            model=model,
         )
         return chat_completion
     
-    def get_text_completion(self, user_message):
-        # Fix: The error indicates the API doesn't accept 'best_of' and 'echo'
-        # and expects different parameters
+    def get_text_completion(self, user_message, model=DEFAULT_MODEL):
         text_completion = self.client.completions.create(
             prompt=user_message,
-            model="llama3.1-8b",
+            model=model,
             max_tokens=256
-            # Remove any default parameters that might be causing issues
-            # Let the SDK use its defaults
         )
         return text_completion
-    
-# convenience wrapper so you can do `from cerebras_client import get_chat_completion`
-def get_chat_completion(user_message):
+
+# Simplified convenience wrappers
+def get_chat_completion(prompt):
+    """Get a chat completion from the Cerebras API."""
     client = CerebrasClient()
-    return client.get_chat_completion(user_message)
+    return client.get_chat_completion(prompt)
 
 def get_text_completion(user_message):
+    """Get a text completion from the Cerebras API."""
     client = CerebrasClient()
     return client.get_text_completion(user_message)

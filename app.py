@@ -513,11 +513,6 @@ with tab1: # This block defines the content within the first tab
         else:
             st.info("Fetch an RSS feed using the controls on the left to see its content here.")
 # -----------------------------------------------------------------------------
-
-
-# -----------------------------------------------------------------------------
-# TAB 2: Cerebras LLM Completion
-# -----------------------------------------------------------------------------
 with tab2: # Content for the second tab
     st.header("Cerebras LLM Completion") # Header for this tab
 
@@ -543,35 +538,99 @@ with tab2: # Content for the second tab
         # Submit button for the form
         form_submitted = st.form_submit_button("Generate Completion")
 
-        if form_submitted: # This block executes when the submit button is pressed
-            if user_prompt_input.strip(): # Check if the prompt is not empty (after removing whitespace)
-                # Show a spinner while waiting for the API response
+        if form_submitted: 
+            if user_prompt_input.strip(): 
                 with st.spinner("Generating completion from Cerebras LLM..."):
                     try:
                         api_response = None
-                        # Call the appropriate Cerebras client function based on user selection
                         if selected_completion_type == "Chat Completion":
                             st.info("Requesting Chat Completion...")
                             api_response = get_chat_completion(user_prompt_input)
-                        else: # Text Completion
+                        else: 
                             st.info("Requesting Text Completion...")
                             api_response = get_text_completion(user_prompt_input)
 
                         st.subheader("LLM Response:")
-                        # Display the API response (typically a dictionary or JSON-like object)
-                        st.write(api_response) # `st.write` can intelligently display various data types
-                        # st.json(api_response, expanded=True) # Alternative: display as expandable JSON
+                        
+                        # Debug information (can be removed in production)
+                        with st.expander("Response Type Info"):
+                            st.write(f"Response type: {type(api_response)}")
+                        
+                        # First try the attribute access method (recommended)
+                        try:
+                            if selected_completion_type == "Chat Completion":
+                                # Try object-attribute access first (as per documentation)
+                                response_text = api_response.choices[0].message.content
+                                
+                                # Display the response
+                                st.markdown(response_text)
+                                
+                                # Optional: Display metadata
+                                with st.expander("Response Metadata"):
+                                    st.write(f"**Finish Reason:** {api_response.choices[0].finish_reason}")
+                                    st.write(f"**Model:** {api_response.model}")
+                                    if hasattr(api_response, 'usage'):
+                                        st.write(f"**Usage:** {api_response.usage}")
+                            
+                            elif selected_completion_type == "Text Completion":
+                                # For text completions - correct access based on API documentation
+                                try:
+                                    # The completion text should be in choices[0].text
+                                    response_text = api_response.choices[0].text
+                                    st.markdown(response_text)
+                                    
+                                    # Optional: Display metadata
+                                    with st.expander("Response Metadata"):
+                                        st.write(f"**Finish Reason:** {api_response.choices[0].finish_reason}")
+                                        st.write(f"**Model:** {api_response.model}")
+                                        if hasattr(api_response, 'usage'):
+                                            st.write(f"**Usage:** {api_response.usage}")
+                                except AttributeError:
+                                    # If direct attribute access fails, try dictionary-based access
+                                    if isinstance(api_response, dict) and "choices" in api_response and len(api_response["choices"]) > 0:
+                                        if "text" in api_response["choices"][0]:
+                                            response_text = api_response["choices"][0]["text"]
+                                            st.markdown(response_text)
+                                        else:
+                                            st.error("Could not find 'text' in the completion response")
+                                            st.json(api_response)
+                                    else:
+                                        st.error("Unexpected text completion response format")
+                                        st.json(api_response)
+                        
+                        except (AttributeError, IndexError, TypeError) as attr_error:
+                            st.warning(f"Could not access response with attribute notation: {attr_error}")
+                            
+                            # Fall back to dictionary-based access
+                            response_text = None
+                            
+                            if isinstance(api_response, dict):
+                                if selected_completion_type == "Chat Completion" and "choices" in api_response:
+                                    choices = api_response["choices"]
+                                    if choices and isinstance(choices, list) and len(choices) > 0:
+                                        choice = choices[0]
+                                        if isinstance(choice, dict) and "message" in choice:
+                                            response_text = choice["message"].get("content", "")
+                                        elif isinstance(choice, str) and "message=" in choice:
+                                            import re
+                                            content_match = re.search(r"content='([^']*)'", choice)
+                                            if content_match:
+                                                response_text = content_match.group(1)
+                                elif selected_completion_type == "Text Completion" and "text" in api_response:
+                                    response_text = api_response["text"]
+                            
+                            # Display the response if we found it
+                            if response_text:
+                                st.markdown(response_text)
+                            else:
+                                st.error("Could not extract response text using any known method")
+                                st.json(api_response)
 
                     except Exception as e_cerebras:
-                        # Handle any errors that occur during the API call
-                        st.error(f"An error occurred while communicating with Cerebras API: {e_cerebras}")
+                        st.error(f"An error occurred with the Cerebras API: {e_cerebras}")
             else:
-                # If the prompt is empty, show a warning
                 st.warning("Please enter a prompt before submitting.")
-# -----------------------------------------------------------------------------
-
-
-
+                
 # -----------------------------------------------------------------------------
 # TAB 3: Future Project (Placeholder)
 # -----------------------------------------------------------------------------
