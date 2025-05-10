@@ -1,74 +1,82 @@
-# -----------------------------------------------------------------------------
-# IMPORTS
-# Standard library imports
-import os       # For interacting with the operating system (e.g., file paths)
-import json     # For working with JSON data (encoding and decoding)
-import pickle   # For serializing and deserializing Python objects (saving/loading data)
-import re       # For regular expression operations (pattern matching in strings)
-import html     # For escaping HTML special characters
-import datetime # For working with dates and times (e.g., current date)
-import subprocess # For running shell commands (e.g., getting Git version info)
+"""
+Multi-Tool Dashboard Application
+A Streamlit application that provides various tools for RSS feed processing,
+semantic search, and LLM interactions.
+"""
+import os
+import json
+import pickle
+import re
+import html
+import datetime
+import subprocess
+from pathlib import Path
+from typing import Optional, Dict, Any, List
 
-# Third-party library imports
-import streamlit as st  # The main library for building Streamlit web apps
-import requests         # For making HTTP requests (e.g., fetching RSS feeds)
-import xmltodict        # For converting XML data to Python dictionaries
-import pandas as pd     # For data manipulation and analysis (e.g., creating DataFrames)
-import numpy as np      # For numerical operations, especially with arrays
-import faiss            # For efficient similarity search and clustering of dense vectors
-
-# NLTK (Natural Language Toolkit) for text processing
+import streamlit as st
+import requests
+import xmltodict
+import pandas as pd
+import numpy as np
+import faiss
 import nltk
-# Download the 'punkt' tokenizer models if not already present.
-# 'punkt' is used for sentence tokenization. 'quiet=True' suppresses output.
+from nltk.tokenize import sent_tokenize
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+import plotly.express as px
+
+# Download NLTK data
 nltk.download('punkt', quiet=True)
-from nltk.tokenize import sent_tokenize # Specifically import the sentence tokenizer
 
-# Plotting libraries
-import matplotlib.pyplot as plt # For creating static, interactive, and animated visualizations
-from sklearn.decomposition import PCA # Principal Component Analysis for dimensionality reduction
-import plotly.express as px     # For creating interactive plots easily
-
-# Custom local module imports (assuming these files are in the same directory or accessible)
-from cerebras_client import get_chat_completion, get_text_completion # Functions for Cerebras API
-from openai_client import get_openai_embeddings # Function for OpenAI embeddings API
-# -----------------------------------------------------------------------------
-
-# Component imports
+# Import custom modules
+from cerebras_client import get_chat_completion, get_text_completion
+from openai_client import get_openai_embeddings
 from components.rss_tab import render_rss_tab
 from components.cerebras_tab import render_cerebras_tab
 from components.future_tab import render_future_tab
+from config import (
+    PAGE_TITLE, PAGE_ICON, LAYOUT, INITIAL_SIDEBAR_STATE,
+    TAB_NAMES, DATA_DIR, CACHE_DIR
+)
+
+# Initialize session state
+if 'rss_data' not in st.session_state:
+    st.session_state.rss_data = None
+if 'embeddings' not in st.session_state:
+    st.session_state.embeddings = None
+if 'search_results' not in st.session_state:
+    st.session_state.search_results = None
 
 # -----------------------------------------------------------------------------
 # STREAMLIT PAGE CONFIGURATION
 # -----------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Multi-Tool App",
-    page_icon="🛠️",
-    layout="wide",
-    initial_sidebar_state="auto"
+    page_title=PAGE_TITLE,
+    page_icon=PAGE_ICON,
+    layout=LAYOUT,
+    initial_sidebar_state=INITIAL_SIDEBAR_STATE
 )
 
 # -----------------------------------------------------------------------------
 # MAIN APP HEADER
 # -----------------------------------------------------------------------------
-st.title("🛠️ Multi-Tool Dashboard")
+st.title(f"{PAGE_ICON} {PAGE_TITLE}")
 
 # -----------------------------------------------------------------------------
 # TAB CREATION
 # -----------------------------------------------------------------------------
-tab1, tab2, tab3 = st.tabs(["RSS to JSON & Search", "Cerebras LLM", "Future Project"])
+tabs = st.tabs(list(TAB_NAMES.values()))
 
 # -----------------------------------------------------------------------------
 # RENDER EACH TAB
 # -----------------------------------------------------------------------------
-with tab1:
+with tabs[0]:
     render_rss_tab()
 
-with tab2:
+with tabs[1]:
     render_cerebras_tab()
 
-with tab3:
+with tabs[2]:
     render_future_tab()
 
 # -----------------------------------------------------------------------------
@@ -86,19 +94,22 @@ with footer_col2:
     # Generate dynamic version information from Git
     try:
         # Get the latest tag (version) from Git
-        git_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], 
-                                          stderr=subprocess.DEVNULL).decode().strip()
-        # If no tags exist, this will fail and go to except block
+        git_tag = subprocess.check_output(
+            ["git", "describe", "--tags", "--abbrev=0"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
         
         # Get number of commits since tag
         commits_since_tag = subprocess.check_output(
-            ["git", "rev-list", f"{git_tag}..HEAD", "--count"], 
-            stderr=subprocess.DEVNULL).decode().strip()
+            ["git", "rev-list", f"{git_tag}..HEAD", "--count"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
         
         # Get current commit hash (short version)
         git_commit = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"], 
-            stderr=subprocess.DEVNULL).decode().strip()
+            ["git", "rev-parse", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
         
         if int(commits_since_tag) > 0:
             # If there are commits since the last tag, show tag+commits+hash
@@ -111,12 +122,14 @@ with footer_col2:
         try:
             # Fallback: if no tags, use commit count as version
             commit_count = subprocess.check_output(
-                ["git", "rev-list", "--count", "HEAD"], 
-                stderr=subprocess.DEVNULL).decode().strip()
+                ["git", "rev-list", "--count", "HEAD"],
+                stderr=subprocess.DEVNULL
+            ).decode().strip()
             
             git_commit = subprocess.check_output(
-                ["git", "rev-parse", "--short", "HEAD"], 
-                stderr=subprocess.DEVNULL).decode().strip()
+                ["git", "rev-parse", "--short", "HEAD"],
+                stderr=subprocess.DEVNULL
+            ).decode().strip()
                 
             APP_VERSION = f"0.0.{commit_count} ({git_commit})"
         except:
@@ -127,4 +140,7 @@ with footer_col2:
     BUILD_DATE = datetime.datetime.now().strftime("%B %d, %Y")
     
     # Display version info with right alignment
-    st.caption(f"<div style='text-align: right;'>Version {APP_VERSION} • Built {BUILD_DATE}</div>", unsafe_allow_html=True)
+    st.caption(
+        f"<div style='text-align: right;'>Version {APP_VERSION} • Built {BUILD_DATE}</div>",
+        unsafe_allow_html=True
+    )

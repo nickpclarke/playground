@@ -5,10 +5,10 @@ import pandas as pd
 import numpy as np
 
 # Import utility functions
-from utils.rss_utils import rss_to_json, extract_feed_items, create_items_dataframe
+from utils.rss_utils import fetch_rss_feed, extract_feed_items, create_items_dataframe
 from utils.text_utils import chunk_text, create_text_chunks
 from utils.embedding_utils import (
-    generate_embeddings, 
+    generate_embeddings_batch, 
     visualize_embeddings_2d,
     visualize_embeddings_3d,
     perform_semantic_search
@@ -70,7 +70,7 @@ def rss_input_section():
     if st.button("Convert to JSON", key="rss_convert_btn"):
         if rss_url:
             with st.spinner("Fetching and converting feed..."):
-                json_data, error_message = rss_to_json(rss_url)
+                json_data, error_message = fetch_rss_feed(rss_url)
 
                 if error_message:
                     st.error(error_message)
@@ -140,7 +140,7 @@ def render_feed_items_subtab():
                     
                     # Generate embeddings using utility function
                     try:
-                        embeddings = generate_embeddings(texts_to_embed, show_progress=True)
+                        embeddings = generate_embeddings_batch(texts_to_embed, show_progress=True)
                         
                         if embeddings:
                             if len(embeddings) == len(texts_to_embed):
