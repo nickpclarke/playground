@@ -6,6 +6,8 @@ import json     # For working with JSON data (encoding and decoding)
 import pickle   # For serializing and deserializing Python objects (saving/loading data)
 import re       # For regular expression operations (pattern matching in strings)
 import html     # For escaping HTML special characters
+import datetime # For working with dates and times (e.g., current date)
+import subprocess # For running shell commands (e.g., getting Git version info)
 
 # Third-party library imports
 import streamlit as st  # The main library for building Streamlit web apps
@@ -73,4 +75,56 @@ with tab3:
 # FOOTER
 # -----------------------------------------------------------------------------
 st.divider()
-st.caption("Created with Streamlit • View on [GitHub: nickpclarke/playground](https://github.com/nickpclarke/playground)")
+
+# Create a two-column layout for the footer
+footer_col1, footer_col2 = st.columns(2)
+
+with footer_col1:
+    st.caption("Created with Streamlit • View on [GitHub: nickpclarke/playground](https://github.com/nickpclarke/playground)")
+
+with footer_col2:
+    # Generate dynamic version information from Git
+    try:
+        # Get the latest tag (version) from Git
+        git_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"], 
+                                          stderr=subprocess.DEVNULL).decode().strip()
+        # If no tags exist, this will fail and go to except block
+        
+        # Get number of commits since tag
+        commits_since_tag = subprocess.check_output(
+            ["git", "rev-list", f"{git_tag}..HEAD", "--count"], 
+            stderr=subprocess.DEVNULL).decode().strip()
+        
+        # Get current commit hash (short version)
+        git_commit = subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"], 
+            stderr=subprocess.DEVNULL).decode().strip()
+        
+        if int(commits_since_tag) > 0:
+            # If there are commits since the last tag, show tag+commits+hash
+            APP_VERSION = f"{git_tag}+{commits_since_tag} ({git_commit})"
+        else:
+            # If we're exactly on a tag, just show the tag
+            APP_VERSION = f"{git_tag} ({git_commit})"
+            
+    except subprocess.SubprocessError:
+        try:
+            # Fallback: if no tags, use commit count as version
+            commit_count = subprocess.check_output(
+                ["git", "rev-list", "--count", "HEAD"], 
+                stderr=subprocess.DEVNULL).decode().strip()
+            
+            git_commit = subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"], 
+                stderr=subprocess.DEVNULL).decode().strip()
+                
+            APP_VERSION = f"0.0.{commit_count} ({git_commit})"
+        except:
+            # Ultimate fallback if Git is not available
+            APP_VERSION = "1.0.0-dev"
+    
+    # Use current date for build date
+    BUILD_DATE = datetime.datetime.now().strftime("%B %d, %Y")
+    
+    # Display version info with right alignment
+    st.caption(f"<div style='text-align: right;'>Version {APP_VERSION} • Built {BUILD_DATE}</div>", unsafe_allow_html=True)
