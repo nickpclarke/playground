@@ -4,24 +4,35 @@ from cerebras_client import get_chat_completion, get_text_completion, DEFAULT_MO
 def render_cerebras_tab():
     """Render the Cerebras LLM Completion tab."""
     st.header("Cerebras LLM Completion")
+    
+    st.write("Interact with Cerebras Large Language Models.")
+    
+    # Move the completion type selection outside the form for reactivity
+    selected_completion_type = st.radio(
+        "Select completion type:",
+        options=["Chat Completion", "Text Completion"],
+        horizontal=True
+    )
+    
+    # Define model options based on completion type
+    if selected_completion_type == "Chat Completion":
+        model_options = [
+            "qwen-3-32b",
+            "llama-4-scout-17b-16e-instruct",
+            "llama3.1-8b",
+            "llama-3.3-70b"
+        ]
+    else:  # Text Completion
+        model_options = [
+            "qwen-3-32b",
+            "llama3.1-8b",
+            "llama-3.3-70b"
+        ]
 
     with st.form(key="cerebras_completion_form", clear_on_submit=False):
-        st.write("Interact with Cerebras Large Language Models.")
-        
-        selected_completion_type = st.radio(
-            "Select completion type:",
-            options=["Chat Completion", "Text Completion"],
-            horizontal=True
-        )
-
         selected_model = st.selectbox(
             "Select model:",
-            options=[
-                "qwen-3-32b",
-                "llama-4-scout-17b-16e-instruct",
-                "llama3.1-8b",
-                "llama-3.3-70b"
-            ],
+            options=model_options,
             index=0
         )
 
