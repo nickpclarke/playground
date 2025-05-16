@@ -2,7 +2,7 @@ import os
 from cerebras.cloud.sdk import Cerebras
 
 # Default model to use across all functions
-DEFAULT_MODEL = "llama3.1-8b"
+DEFAULT_MODEL = "Qwen-3-32B"
 
 class CerebrasClient:
     def __init__(self, api_key=None):
@@ -31,12 +31,12 @@ class CerebrasClient:
         return text_completion
 
 # Simplified convenience wrappers
-def get_chat_completion(prompt):
+def get_chat_completion(prompt, model=DEFAULT_MODEL):
     """Get a chat completion from the Cerebras API."""
     client = CerebrasClient()
-    return client.get_chat_completion(prompt)
+    return client.get_chat_completion(prompt, model=model)
 
-def get_text_completion(user_message):
+def get_text_completion(user_message, model=DEFAULT_MODEL):
     """Get a text completion from the Cerebras API."""
     client = CerebrasClient()
-    return client.get_text_completion(user_message)
+    return client.get_text_completion(user_message, model=model)

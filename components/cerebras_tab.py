@@ -1,5 +1,5 @@
 import streamlit as st
-from cerebras_client import get_chat_completion, get_text_completion
+from cerebras_client import get_chat_completion, get_text_completion, DEFAULT_MODEL
 
 def render_cerebras_tab():
     """Render the Cerebras LLM Completion tab."""
@@ -12,6 +12,17 @@ def render_cerebras_tab():
             "Select completion type:",
             options=["Chat Completion", "Text Completion"],
             horizontal=True
+        )
+
+        selected_model = st.selectbox(
+            "Select model:",
+            options=[
+                "qwen-3-32b",
+                "llama-4-scout-17b-16e-instruct",
+                "llama3.1-8b",
+                "llama-3.3-70b"
+            ],
+            index=0
         )
 
         user_prompt_input = st.text_area(
@@ -29,10 +40,10 @@ def render_cerebras_tab():
                         api_response = None
                         if selected_completion_type == "Chat Completion":
                             st.info("Requesting Chat Completion...")
-                            api_response = get_chat_completion(user_prompt_input)
+                            api_response = get_chat_completion(user_prompt_input, model=selected_model)
                         else:
                             st.info("Requesting Text Completion...")
-                            api_response = get_text_completion(user_prompt_input)
+                            api_response = get_text_completion(user_prompt_input, model=selected_model)
 
                         st.subheader("LLM Response:")
                         
